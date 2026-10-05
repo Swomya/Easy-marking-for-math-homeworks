@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app
+      POSTGRES_DB: mathgrader
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d mathgrader"]
+      interval: 3s
+      retries: 10
+    volumes: [pgdata:/var/lib/postgresql/data]
+
+  api:
+    build: .
+    ports: ["8000:8000"]
+    depends_on:
+      db: {condition: service_healthy}
+    environment:
+      DATABASE_URL: postgresql+psycopg2://app:app@db:5432/mathgrader
+      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-long-random-secret-123}
+      OCR_ENGINE: ${OCR_ENGINE:-gemini}      # đặt mock để chạy không cần API key
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
+    volumes: [uploads:/code/data/uploads]
+
+volumes:
+  pgdata:
+  uploads:
